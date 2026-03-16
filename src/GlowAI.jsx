@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
+import heic2any from "heic2any";
 
 const SKIN_PRODUCTS = [
   { name: "CeraVe Hydrating Cleanser", concern: "Dryness", price: "$14", match: 97, img: "🧴", tag: "Cleanser" },
@@ -62,11 +63,20 @@ function UploadZone({ onAnalyze, type }) {
   const [preview, setPreview] = useState(null);
   const inputRef = useRef();
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file) return;
+    let processedFile = file;
+    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+      try {
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+        processedFile = new File([converted], file.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+      } catch (err) {
+        console.error("HEIC conversion failed", err);
+      }
+    }
     const reader = new FileReader();
     reader.onload = (e) => setPreview(e.target.result);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(processedFile);
   };
 
   const handleDrop = (e) => {
@@ -115,7 +125,7 @@ function UploadZone({ onAnalyze, type }) {
             <p style={{ color: "#c4a0db", fontSize: 13 }}>{type === "skin" ? "Selfie works best" : "Well-lit hair photo"}</p>
           </>
         )}
-        <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files[0])} />
+        <input ref={inputRef} type="file" accept="image/*,.heic,.heif,.HEIC,.HEIF" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files[0])} />
       </div>
       <button
         onClick={onAnalyze}
