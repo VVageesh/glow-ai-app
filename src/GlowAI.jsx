@@ -81,7 +81,7 @@ function UploadZone({ onAnalyze, type }) {
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        onClick={() => inputRef.current.click()}
+        onClick={() => { if (!preview) inputRef.current.click(); }}
         style={{
           border: `2px dashed ${dragging ? "#b06ecf" : "#d4a8e8"}`,
           borderRadius: 20,
@@ -99,7 +99,15 @@ function UploadZone({ onAnalyze, type }) {
         }}
       >
         {preview ? (
-          <img src={preview} alt="preview" style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: 18 }} />
+          <div style={{ position: "relative", width: "100%" }}>
+            <img src={preview} alt="preview" style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: 18 }} />
+            <button
+              onClick={(e) => { e.stopPropagation(); inputRef.current.click(); }}
+              style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 12, cursor: "pointer" }}
+            >
+              Change photo
+            </button>
+          </div>
         ) : (
           <>
             <span style={{ fontSize: 48 }}>{type === "skin" ? "🤳" : "💇"}</span>
