@@ -64,8 +64,9 @@ function UploadZone({ onAnalyze, type }) {
 
   const handleFile = (file) => {
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreview(url);
+    const reader = new FileReader();
+    reader.onload = (e) => setPreview(e.target.result);
+    reader.readAsDataURL(file);
   };
 
   const handleDrop = (e) => {
