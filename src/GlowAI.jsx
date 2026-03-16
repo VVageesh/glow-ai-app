@@ -58,9 +58,10 @@ function ScoreRing({ score, label, color }) {
   );
 }
 
-function UploadZone({ onAnalyze, type }) {
+function UploadZone({ onAnalyze, onImageChange, type }) {
   const [dragging, setDragging] = useState(false);
   const [preview, setPreview] = useState(null);
+  const imageDataRef = useRef(null);
   const inputRef = useRef();
 
   const handleFile = async (file) => {
@@ -75,7 +76,11 @@ function UploadZone({ onAnalyze, type }) {
       }
     }
     const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target.result);
+    reader.onload = (e) => {
+      setPreview(e.target.result);
+      imageDataRef.current = e.target.result;
+      if (onImageChange) onImageChange(e.target.result);
+    };
     reader.readAsDataURL(processedFile);
   };
 
@@ -128,7 +133,7 @@ function UploadZone({ onAnalyze, type }) {
         <input ref={inputRef} type="file" accept="image/*,.heic,.heif,.HEIC,.HEIF" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files[0])} />
       </div>
       <button
-        onClick={onAnalyze}
+        onClick={() => onAnalyze(imageDataRef.current)}
         style={{
           background: "linear-gradient(135deg, #c06dd6, #7c5c9e)",
           color: "white",
@@ -149,75 +154,37 @@ function UploadZone({ onAnalyze, type }) {
   );
 }
 
-function SkinResult() {
-  const radarData = [
-    { subject: "Hydration", score: 75 },
-    { subject: "Clarity", score: 78 },
-    { subject: "Texture", score: 76 },
-    { subject: "Radiance", score: 70 },
-    { subject: "Firmness", score: 65 },
-  ];
+function AnalysisResult({ result, type }) {
+  const skinScoreKeys = ["hydration", "clarity", "texture", "radiance"];
+  const hairScoreKeys = ["strength", "moisture", "shine", "porosity"];
+  const scoreKeys = type === "skin" ? skinScoreKeys : hairScoreKeys;
+  const colors = ["#c06dd6", "#e884b0", "#7c9edf", "#f4a261"];
+  const gradientColor = type === "skin" ? "linear-gradient(90deg, #c06dd6, #e884b0)" : "linear-gradient(90deg, #c06dd6, #7c9edf)";
 
   return (
     <div style={{ background: "#fdf7ff", borderRadius: 20, padding: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-around", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-        <ScoreRing score={75} label="Hydration" color="#c06dd6" />
-        <ScoreRing score={78} label="Clarity" color="#e884b0" />
-        <ScoreRing score={76} label="Texture" color="#7c9edf" />
-        <ScoreRing score={70} label="Radiance" color="#f4a261" />
+        {scoreKeys.map((key, i) => (
+          <ScoreRing key={key} score={result.scores[key] ?? 0} label={key.charAt(0).toUpperCase() + key.slice(1)} color={colors[i]} />
+        ))}
       </div>
       <div style={{ background: "white", borderRadius: 16, padding: 16, marginBottom: 16 }}>
         <p style={{ fontWeight: 700, color: "#3d1f5c", marginBottom: 8 }}>🔍 AI Insights</p>
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-          {["Mild dehydration detected — boost water intake & add a hyaluronic acid serum", "T-zone shows slight oiliness — consider a gentle BHA exfoliant", "Skin tone is uneven in the cheek area — Vitamin C could help", "Overall skin health is improving! +12 pts since last week"].map((tip, i) => (
-            <li key={i} style={{ color: "#5a3d7a", fontSize: 14, display: "flex", gap: 6 }}>
-              <span>{["💧", "🌿", "✨", "📈"][i]}</span> {tip}
-            </li>
+          {(result.insights || []).map((tip, i) => (
+            <li key={i} style={{ color: "#5a3d7a", fontSize: 14 }}>{tip}</li>
           ))}
         </ul>
       </div>
       <div style={{ background: "white", borderRadius: 16, padding: 16 }}>
-        <p style={{ fontWeight: 700, color: "#3d1f5c", marginBottom: 4 }}>Overall Skin Score</p>
+        <p style={{ fontWeight: 700, color: "#3d1f5c", marginBottom: 4 }}>Overall {type === "skin" ? "Skin" : "Hair"} Score</p>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ flex: 1, background: "#f1e8f7", borderRadius: 8, height: 14 }}>
-            <div style={{ width: "74%", height: "100%", background: "linear-gradient(90deg, #c06dd6, #e884b0)", borderRadius: 8, transition: "width 1s ease" }} />
+            <div style={{ width: `${result.overallScore}%`, height: "100%", background: gradientColor, borderRadius: 8, transition: "width 1s ease" }} />
           </div>
-          <span style={{ fontWeight: 800, color: "#c06dd6", fontSize: 18 }}>74</span>
+          <span style={{ fontWeight: 800, color: "#c06dd6", fontSize: 18 }}>{result.overallScore}</span>
         </div>
-        <p style={{ color: "#9b7cb4", fontSize: 13, marginTop: 6 }}>Good · Keep up your routine!</p>
-      </div>
-    </div>
-  );
-}
-
-function HairResult() {
-  return (
-    <div style={{ background: "#fdf7ff", borderRadius: 20, padding: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-around", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-        <ScoreRing score={71} label="Strength" color="#c06dd6" />
-        <ScoreRing score={76} label="Moisture" color="#e884b0" />
-        <ScoreRing score={74} label="Shine" color="#7c9edf" />
-        <ScoreRing score={62} label="Porosity" color="#f4a261" />
-      </div>
-      <div style={{ background: "white", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-        <p style={{ fontWeight: 700, color: "#3d1f5c", marginBottom: 8 }}>🔍 AI Insights</p>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-          {["Hair shows signs of heat damage — reduce heat styling or use a protectant", "High porosity detected — use protein treatments to seal cuticles", "Split ends visible at the tips — a trim would boost shine scores", "Scalp hydration is good — your current shampoo is working!"].map((tip, i) => (
-            <li key={i} style={{ color: "#5a3d7a", fontSize: 14, display: "flex", gap: 6 }}>
-              <span>{["🔥", "🧬", "✂️", "💚"][i]}</span> {tip}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div style={{ background: "white", borderRadius: 16, padding: 16 }}>
-        <p style={{ fontWeight: 700, color: "#3d1f5c", marginBottom: 4 }}>Overall Hair Score</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ flex: 1, background: "#f1e8f7", borderRadius: 8, height: 14 }}>
-            <div style={{ width: "70%", height: "100%", background: "linear-gradient(90deg, #c06dd6, #7c9edf)", borderRadius: 8, transition: "width 1s ease" }} />
-          </div>
-          <span style={{ fontWeight: 800, color: "#c06dd6", fontSize: 18 }}>70</span>
-        </div>
-        <p style={{ color: "#9b7cb4", fontSize: 13, marginTop: 6 }}>Fair · Some improvement needed</p>
+        <p style={{ color: "#9b7cb4", fontSize: 13, marginTop: 6 }}>{result.overallLabel}</p>
       </div>
     </div>
   );
@@ -226,15 +193,40 @@ function HairResult() {
 function AnalysisTab({ type }) {
   const [analyzed, setAnalyzed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [currentImage, setCurrentImage] = useState(null);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async (imageData) => {
+    if (!imageData) { setError("Please upload a photo first."); return; }
     setLoading(true);
-    setTimeout(() => { setLoading(false); setAnalyzed(true); }, 2000);
+    setError(null);
+    setAnalyzed(false);
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageData, type }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Analysis failed");
+      setResult(data);
+      setAnalyzed(true);
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <UploadZone onAnalyze={handleAnalyze} type={type} />
+      <UploadZone onAnalyze={handleAnalyze} onImageChange={setCurrentImage} type={type} />
+      {error && (
+        <div style={{ background: "#fff0f0", border: "1px solid #ffcccc", borderRadius: 12, padding: 14, color: "#c0392b", fontSize: 14 }}>
+          ⚠️ {error}
+        </div>
+      )}
       {loading && (
         <div style={{ textAlign: "center", padding: 24 }}>
           <div style={{ fontSize: 36 }}>🔬</div>
@@ -250,7 +242,7 @@ function AnalysisTab({ type }) {
           <style>{`@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }`}</style>
         </div>
       )}
-      {analyzed && !loading && (type === "skin" ? <SkinResult /> : <HairResult />)}
+      {analyzed && !loading && result && <AnalysisResult result={result} type={type} />}
     </div>
   );
 }
