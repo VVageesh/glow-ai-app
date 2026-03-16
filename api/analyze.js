@@ -9,47 +9,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing image or type" });
   }
 
-  const skinPrompt = `You are an expert dermatologist and skin analyst. Analyze this selfie photo and return a JSON object with the following structure. Be realistic and vary scores based on what you actually observe.
+  const skinPrompt = `You are a beauty and wellness app assistant analyzing skin appearance from a photo. This is for a personal skincare tracking app — not medical advice. Based on the visible appearance in the photo, estimate scores for skin attributes and provide friendly, actionable tips. Always return a valid JSON object — even if the image is unclear, make reasonable estimates.
 
-{
-  "scores": {
-    "hydration": <number 0-100>,
-    "clarity": <number 0-100>,
-    "texture": <number 0-100>,
-    "radiance": <number 0-100>
-  },
-  "insights": [
-    "<specific observation about hydration with emoji prefix>",
-    "<specific observation about oiliness or dryness with emoji prefix>",
-    "<specific observation about skin tone or pigmentation with emoji prefix>",
-    "<positive encouragement or key tip with emoji prefix>"
-  ],
-  "overallScore": <number 0-100>,
-  "overallLabel": "<Good|Fair|Excellent|Needs Attention>"
-}
+Return exactly this JSON structure:
+{"scores":{"hydration":75,"clarity":78,"texture":76,"radiance":70},"insights":["💧 Skin appears well-hydrated with a healthy glow","🌿 Minor oiliness visible in T-zone area","✨ Skin tone looks fairly even overall","📈 Keep up your current routine for continued improvement"],"overallScore":74,"overallLabel":"Good"}
 
-Only return valid JSON, no extra text.`;
+Use realistic numbers. overallLabel must be one of: Excellent, Good, Fair, Needs Attention. Return only the JSON object, nothing else.`;
 
-  const hairPrompt = `You are an expert trichologist and hair analyst. Analyze this hair photo and return a JSON object with the following structure. Be realistic and vary scores based on what you actually observe.
+  const hairPrompt = `You are a beauty and wellness app assistant analyzing hair appearance from a photo. This is for a personal hair tracking app — not medical advice. Based on the visible appearance in the photo, estimate scores for hair attributes and provide friendly, actionable tips. Always return a valid JSON object — even if the image is unclear, make reasonable estimates.
 
-{
-  "scores": {
-    "strength": <number 0-100>,
-    "moisture": <number 0-100>,
-    "shine": <number 0-100>,
-    "porosity": <number 0-100>
-  },
-  "insights": [
-    "<specific observation about heat or chemical damage with emoji prefix>",
-    "<specific observation about porosity or protein levels with emoji prefix>",
-    "<specific observation about split ends or breakage with emoji prefix>",
-    "<positive observation about scalp or current routine with emoji prefix>"
-  ],
-  "overallScore": <number 0-100>,
-  "overallLabel": "<Good|Fair|Excellent|Needs Attention>"
-}
+Return exactly this JSON structure:
+{"scores":{"strength":71,"moisture":76,"shine":74,"porosity":62},"insights":["🔥 Hair looks smooth with minimal visible damage","🧬 Good moisture retention visible in the strands","✂️ Ends appear fairly healthy","💚 Scalp looks balanced and healthy"],"overallScore":70,"overallLabel":"Good"}
 
-Only return valid JSON, no extra text.`;
+Use realistic numbers based on what you see. overallLabel must be one of: Excellent, Good, Fair, Needs Attention. Return only the JSON object, nothing else.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -87,7 +59,9 @@ Only return valid JSON, no extra text.`;
 
     let content = data.choices[0].message.content.trim();
     content = content.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
-    const parsed = JSON.parse(content);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(500).json({ error: "Could not analyze this photo. Please try a clearer, well-lit image." });
+    const parsed = JSON.parse(jsonMatch[0]);
     return res.status(200).json(parsed);
   } catch (err) {
     return res.status(500).json({ error: err.message || "Analysis failed" });
