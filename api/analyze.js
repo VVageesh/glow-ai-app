@@ -85,7 +85,8 @@ Only return valid JSON, no extra text.`;
       return res.status(500).json({ error: data.error?.message || "OpenAI API error" });
     }
 
-    const content = data.choices[0].message.content.trim();
+    let content = data.choices[0].message.content.trim();
+    content = content.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(content);
     return res.status(200).json(parsed);
   } catch (err) {
